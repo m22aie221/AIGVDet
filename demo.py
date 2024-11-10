@@ -53,19 +53,19 @@ def video_to_frames(video_path, output_folder):
     
     return images
 
-
 # Function to generate optical flow images for a single video
-def OF_video_generate(video_path, output_rgb_folder, output_flow_folder, device='cuda'):
+def OF_video_generate(args, video_path, output_rgb_folder, output_flow_folder):
     # Initialize the RAFT model for optical flow
 
-    model = torch.nn.DataParallel(RAFT())  # Adjust RAFT initialization as needed
-    model.load_state_dict(torch.load('raft_model/raft-things.pth', map_location=torch.device(device)))
+    model = torch.nn.DataParallel(RAFT(args))  # Adjust RAFT initialization as needed
+    model.load_state_dict(torch.load(args.model, map_location=torch.device(DEVICE)))
     
     # Remove DataParallel wrapper and move the model to the specified device
     model = model.module
-    model.to(device)
+    model.to(DEVICE)
     model.eval()
 
+    #breakpoint()
     # Check and create output directories if they don't exist
     if not os.path.exists(output_rgb_folder):
         os.makedirs(output_rgb_folder)
@@ -98,8 +98,10 @@ def OF_video_generate(video_path, output_rgb_folder, output_flow_folder, device=
 
     print(f"Optical flow generation complete for {video_path}.")
 
+import os
+
 # Function to process all videos in a folder
-def process_videos_in_folder(original_subfolder_path, optical_subfolder_path, device='cuda'):
+def process_videos_in_folder(args, original_subfolder_path, optical_subfolder_path):
     # Iterate over all mp4 files in the original subfolder
     for video_file in os.listdir(original_subfolder_path):
         if video_file.lower().endswith('.mp4'):
@@ -108,12 +110,28 @@ def process_videos_in_folder(original_subfolder_path, optical_subfolder_path, de
             # Extract the base name of the video file without the extension
             video_name = os.path.splitext(video_file)[0]
 
-            # Create separate folders for RGB frames and optical flow images for each video
-            output_rgb_folder = os.path.join(optical_subfolder_path, video_name, 'RGB_Frames')
-            output_flow_folder = os.path.join(optical_subfolder_path, video_name, 'Optical_Flow')
+            # Define paths for RGB frames and optical flow folders
+            output_rgb_folder = os.path.join(original_subfolder_path, video_name)
+            output_flow_folder = os.path.join(optical_subfolder_path, video_name)
+
+            # Check if both output folders already exist
+            if os.path.exists(output_rgb_folder) and os.path.exists(output_flow_folder):
+                print(f"Skipping {video_name}: RGB frames and optical flow already exist.")
+                continue  # Skip to the next video file
+
+            # If not, create the necessary folders
+            if not os.path.exists(output_rgb_folder):
+                os.makedirs(output_rgb_folder)
+            if not os.path.exists(output_flow_folder):
+                os.makedirs(output_flow_folder)
 
             # Call the OF_gen function to process the video
-            OF_video_generate(video_path, output_rgb_folder, output_flow_folder, device)
+            OF_video_generate(args, video_path, output_rgb_folder, output_flow_folder)
+
+
+
+
+
 
 def load_image(imfile):
     img = np.array(Image.open(imfile)).astype(np.uint8)

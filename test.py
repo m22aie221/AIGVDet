@@ -65,7 +65,24 @@ if __name__=="__main__":
     
     parser.add_argument("--use_cpu", action="store_true", help="uses gpu by default, turn on to use cpu")
     parser.add_argument("--arch", type=str, default="resnet50")
+
+    parser.add_argument('--model', help="Path to the model checkpoint", default="raft_model/raft-things.pth")
+
+
+    # Boolean flag to indicate whether to use a small version of the model
+    parser.add_argument('--small', action='store_true', help='Use a smaller model version')
+    
+    # Boolean flag for using mixed precision during evaluation
+    parser.add_argument('--mixed_precision', action='store_true', help='Use mixed precision computation')
+    
+    # Boolean flag for using an efficient correlation implementation
+    parser.add_argument('--alternate_corr', action='store_true', help='Use an efficient correlation implementation')
+       
+    
+    # Argument to enable or disable data augmentation normalization
     parser.add_argument("--aug_norm", type=str2bool, default=True)
+
+
 
     args = parser.parse_args()
     subfolder_count = 0
@@ -111,7 +128,7 @@ if __name__=="__main__":
     df = pd.DataFrame(columns=['name', 'pro','flag','optical_pro','original_pro'])
     df1 = pd.DataFrame(columns=['original_path', 'original_pro','optical_path','optical_pro','flag'])
     index1=0
-    breakpoint()
+    #breakpoint()
     # Traverse through subfolders in a large folder.
     for subfolder_name in ["0_real", "1_fake"]:
         optical_subfolder_path = os.path.join(args.folder_optical_flow_path, subfolder_name)
@@ -130,15 +147,15 @@ if __name__=="__main__":
         # Check if the subfolder path exists.
         if os.path.isdir(original_subfolder_path):
             print("test subfolder:", subfolder_name)
-            process_videos_in_folder(
+            process_videos_in_folder(args,
             original_subfolder_path,
-            optical_subfolder_path,
-            device='cuda')
+            optical_subfolder_path)
 
             # Traverse through sub-subfolders within a subfolder.
             for subsubfolder_name in os.listdir(original_subfolder_path):
                 original_subsubfolder_path = os.path.join(original_subfolder_path, subsubfolder_name)
                 optical_subsubfolder_path = os.path.join(optical_subfolder_path, subsubfolder_name)
+                #breakpoint()
                 if os.path.isdir(optical_subsubfolder_path):
                     pass
                 else:
@@ -165,9 +182,10 @@ if __name__=="__main__":
                             prob = model_or(in_tens).sigmoid().item()
                             original_prob_sum+=prob
                             
-                        df1 = df1.append({'original_path': img_path, 'original_pro': prob , 'flag':flag}, ignore_index=True)
+                        df1 = df1._append({'original_path': img_path, 'original_pro': prob , 'flag':flag}, ignore_index=True)
+
                         
-                        
+                    #breakpoint()    
                     original_predict=original_prob_sum/len(original_file_list)
                     print("original prob",original_predict)
                     
@@ -209,13 +227,13 @@ if __name__=="__main__":
                         p+=1
                         if predict>=args.threshold:
                             tp+=1
-                    df = df.append({'name': subsubfolder_name, 'pro': predict , 'flag':flag ,'optical_pro':optical_predict,'original_pro':original_predict}, ignore_index=True)
+                    df = df._append({'name': subsubfolder_name, 'pro': predict , 'flag':flag ,'optical_pro':optical_predict,'original_pro':original_predict}, ignore_index=True)
         else:
             print("Subfolder does not exist:", original_subfolder_path)
     # r_acc = accuracy_score(y_true[y_true == 0], y_pred[y_true == 0] > args.threshold)
     # f_acc = accuracy_score(y_true[y_true == 1], y_pred[y_true == 1] > args.threshold)
     # acc = accuracy_score(y_true, y_pred > args.threshold)
-    breakpoint()
+    #breakpoint()
     ap = average_precision_score(y_true, y_pred)
     auc=roc_auc_score(y_true,y_pred)
     # print(f"r_acc:{r_acc}")
