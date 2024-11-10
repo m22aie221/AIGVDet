@@ -9,6 +9,8 @@ import torchvision.transforms as transforms
 import torchvision.transforms.functional as TF
 from PIL import Image
 from tqdm import tqdm
+from demo import process_videos_in_folder
+import pdb
 
 from core.utils1.utils import get_network, str2bool, to_cuda
 from sklearn.metrics import accuracy_score, average_precision_score, roc_auc_score,roc_auc_score
@@ -109,7 +111,7 @@ if __name__=="__main__":
     df = pd.DataFrame(columns=['name', 'pro','flag','optical_pro','original_pro'])
     df1 = pd.DataFrame(columns=['original_path', 'original_pro','optical_path','optical_pro','flag'])
     index1=0
-    
+    breakpoint()
     # Traverse through subfolders in a large folder.
     for subfolder_name in ["0_real", "1_fake"]:
         optical_subfolder_path = os.path.join(args.folder_optical_flow_path, subfolder_name)
@@ -128,6 +130,10 @@ if __name__=="__main__":
         # Check if the subfolder path exists.
         if os.path.isdir(original_subfolder_path):
             print("test subfolder:", subfolder_name)
+            process_videos_in_folder(
+            original_subfolder_path,
+            optical_subfolder_path,
+            device='cuda')
 
             # Traverse through sub-subfolders within a subfolder.
             for subsubfolder_name in os.listdir(original_subfolder_path):
@@ -209,7 +215,7 @@ if __name__=="__main__":
     # r_acc = accuracy_score(y_true[y_true == 0], y_pred[y_true == 0] > args.threshold)
     # f_acc = accuracy_score(y_true[y_true == 1], y_pred[y_true == 1] > args.threshold)
     # acc = accuracy_score(y_true, y_pred > args.threshold)
-    
+    breakpoint()
     ap = average_precision_score(y_true, y_pred)
     auc=roc_auc_score(y_true,y_pred)
     # print(f"r_acc:{r_acc}")
